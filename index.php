@@ -14,7 +14,7 @@ $siteName = $data['siteName'] ?? 'Unknown Site';
 
 // Target device/site for highlighting
 $mainDevice = 'EAP110';
-$mainSite   = 'GELAI WIFI VOUCHER';
+$mainSite   = 'GELAI VOUCHER WIFI';
 
 // Customize messages for important events
 switch (strtolower($eventType)) {
