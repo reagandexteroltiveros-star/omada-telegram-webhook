@@ -2,7 +2,7 @@
 /**
  * Omada Webhook + Telegram Alerts
  * Handles Device Online/Offline, Heartbeat Missed, Adopted, Rebooted, Adopting, Provisioning
- * Excludes client name for client-related events
+ * Logs raw payload to debug and fix "Unknown Event" issue
  */
 
 // Telegram bot config
@@ -10,25 +10,40 @@ $telegramBotToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
 $telegramChatId   = "5863793961";
 
 // Default device/site for fallback
-$defaultDevice = 'EAP110-OUTDOOR | TPLINK OMADA';
+$defaultDevice = 'EAP110-OUTDOOR | TP-LINK OMADA';
 $defaultSite   = 'GELAI VOUCHER WIFI';
 
-// Capture Omada payload
+// Log received payload for debugging
+$logFile = '/var/www/html/omada_webhook_log.txt'; // Change this to your server's writable directory
 $rawData = file_get_contents("php://input");
+file_put_contents($logFile, "Received payload: " . $rawData . "\n", FILE_APPEND);
+
+// Decode the raw payload
 $data = json_decode($rawData, true);
 
-// Extract info with defaults
+// If no data is received, log and return an error
+if (!$data) {
+    file_put_contents($logFile, "Invalid payload received.\n", FILE_APPEND);
+    http_response_code(400);
+    echo json_encode(['status' => 'failed', 'error' => 'Invalid or empty payload']);
+    exit;
+}
+
+// Extract values with defaults
 $eventType  = strtolower($data['event_type'] ?? $data['eventType'] ?? 'unknown event');
 $deviceName = $data['device_name'] ?? $data['deviceName'] ?? $defaultDevice;
 $siteName   = $data['site_name'] ?? $data['siteName'] ?? $defaultSite;
 $description = $data['description'] ?? 'No description provided';
 
+// Log extracted values for debugging
+file_put_contents($logFile, "Extracted: EventType: $eventType, Device: $deviceName, Site: $siteName\n", FILE_APPEND);
+
 // Map event types to friendly labels
 switch($eventType) {
-    case 'online': 
+    case 'device online': 
         $alert = "✅ Device Online"; 
         break;
-    case 'disconnected':
+    case 'device offline':
     case 'heartbeat missed': 
         $alert = "⚠️ Heartbeat Missed"; 
         break;
@@ -52,7 +67,7 @@ switch($eventType) {
         $alert = "📴 Client Disconnected"; 
         break;
     default: 
-        $alert = "ℹ️ $eventType"; 
+        $alert = "ℹ️ Unknown Event"; 
         break;
 }
 
@@ -69,7 +84,10 @@ $telegramMessage .= "Site: $siteName\n";
 $telegramMessage .= "Time: " . date("Y-m-d H:i:s") . "\n";
 $telegramMessage .= "Note: $description";
 
-// Send to Telegram
+// Log Telegram message
+file_put_contents($logFile, "Telegram Message: " . $telegramMessage . "\n", FILE_APPEND);
+
+// Send to Telegram bot
 $telegramUrl = "https://api.telegram.org/bot{$telegramBotToken}/sendMessage?chat_id={$telegramChatId}&text=" . urlencode($telegramMessage);
 $telegramResponse = file_get_contents($telegramUrl);
 
