@@ -1,32 +1,49 @@
 <?php
-// poll_offline.php
+$botToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
+$chatId   = "5863793961";
 
-// Set your bot token and chat ID
-$botToken = 'YOUR_BOT_TOKEN';
-$chatId = 'YOUR_CHAT_ID';
+$mainDevice = 'EAP110';
+$mainSite   = 'GELAI WIFI VOUCHER';
 
-// URL for webhook
-$url = "https://api.telegram.org/bot$botToken/sendMessage";
+// Omada API credentials
+$omadaHost = "https://127.0.0.1:8043/#dashboardGlobal";
+$username  = "REAGAN";
+$password  = "Bbangel12398";
 
-// Polling loop
-while (true) {
-    // Retrieve data from Telegram
-    $update = file_get_contents("https://api.telegram.org/bot$botToken/getUpdates");
-    $updateArray = json_decode($update, true);
+// 1️⃣ Authenticate with Omada API
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "$omadaHost/api/v2/login");
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['username'=>$username,'password'=>$password]));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+$result = curl_exec($ch);
+curl_close($ch);
+$token = json_decode($result, true)['token'] ?? '';
 
-    // Check if we have received any messages
-    if (!empty($updateArray["result"])) {
-        foreach ($updateArray["result"] as $message) {
-            // Process the message here
-            $text = $message["message"]["text"];
-            // Send a response back
-            $params = [
-                'chat_id' => $chatId,
-                'text' => "You said: " . $text
-            ];
-            file_get_contents($url . '?' . http_build_query($params));
+// 2️⃣ Get device list
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, "$omadaHost/api/v2/sites");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+$sites = json_decode(curl_exec($ch), true);
+curl_close($ch);
+
+// 3️⃣ Find main device
+foreach ($sites as $site) {
+    if ($site['name'] === $mainSite) {
+        foreach ($site['devices'] as $device) {
+            if ($device['name'] === $mainDevice && $device['status'] !== 'online') {
+                // Send Telegram alert
+                $message  = "⚠️ OMADA ALERT\n\n";
+                $message .= "Event: Device Offline / Heartbeat Missed\n";
+                $message .= "Device: $mainDevice\n";
+                $message .= "Site: $mainSite\n";
+                $message .= "Time: " . date("Y-m-d H:i:s");
+                file_get_contents(
+                    "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=" . urlencode($message)
+                );
+            }
         }
     }
-    // Wait before polling again
-    sleep(1);
 }
