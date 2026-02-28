@@ -10,7 +10,7 @@ $telegramBotToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
 $telegramChatId   = "5863793961";
 
 // Default device/site for fallback
-$defaultDevice = 'EAP110-Outdoor | TP-LINK OMADA';
+$defaultDevice = 'EAP110-OUTDOOR | TPLINK OMADA';
 $defaultSite   = 'GELAI VOUCHER WIFI';
 
 // Capture Omada payload
