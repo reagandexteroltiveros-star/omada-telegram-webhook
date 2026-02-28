@@ -1,12 +1,15 @@
 <?php
-// DEBUG LOGGER
+// Telegram debug settings
+$botToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
+$chatId   = "5863793961";
+
+// Read incoming JSON
 $rawData = file_get_contents("php://input");
 
-// Save the raw JSON payload
-file_put_contents("omada_payload_log.json", $rawData . PHP_EOL, FILE_APPEND);
+// Send the raw JSON to Telegram for debugging
+file_get_contents(
+    "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=" . urlencode("DEBUG OMADA PAYLOAD:\n" . $rawData)
+);
 
-// Also log to Render logs (stdout)
-error_log("OMADA PAYLOAD: " . $rawData);
-
-// Respond OK
+// Respond OK to Omada
 echo "OK";
