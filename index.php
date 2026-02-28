@@ -1,32 +1,20 @@
 <?php
 // Telegram settings
-
 $botToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
 $chatId   = "5863793961";
-
-<?php
-// Telegram settings
-$botToken = "YOUR_BOT_TOKEN_HERE";
-$chatId   = "YOUR_CHAT_ID_HERE";
 
 // Read incoming webhook JSON
 $rawData = file_get_contents("php://input");
 $data = json_decode($rawData, true);
 
-// Map Omada event types to friendly messages
+// Default values if keys are missing
 $eventType = $data['eventType'] ?? 'Unknown Event';
 $deviceName = $data['deviceName'] ?? 'Unknown Device';
-$siteName = $data['siteName'] ?? 'Default';
+$siteName = $data['siteName'] ?? 'Unknown Site';
 
-// Only alert for the device and site you care about
-$targetDevice = 'EAP110';
-$targetSite = 'GELAI WIFI VOUCHER';
-
-if ($deviceName !== $targetDevice || $siteName !== $targetSite) {
-    // Ignore other devices/sites
-    echo "Ignored";
-    exit;
-}
+// Target device/site for highlighting
+$mainDevice = 'EAP110';
+$mainSite   = 'GELAI WIFI VOUCHER';
 
 // Customize messages for important events
 switch (strtolower($eventType)) {
@@ -53,6 +41,11 @@ switch (strtolower($eventType)) {
         break;
 }
 
+// Highlight main device
+if ($deviceName === $mainDevice && $siteName === $mainSite) {
+    $alert = "🔥 $alert"; // emphasis for main device
+}
+
 // Build Telegram message
 $message  = "📡 OMADA ALERT\n\n";
 $message .= "Event: $alert\n";
@@ -65,5 +58,5 @@ file_get_contents(
     "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=" . urlencode($message)
 );
 
-// Respond to Omada
+// Respond OK to Omada
 echo "OK";
