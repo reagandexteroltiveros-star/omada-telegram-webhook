@@ -13,7 +13,7 @@ $description = $data['description'] ?? '';
 
 // Target device/site highlighting
 $mainDevice = 'EAP110';
-$mainSite   = 'GELAI WIFI VOUCHER';
+$mainSite   = 'GELAI VOUCHER WIFI';
 
 // Map events to friendly labels
 switch (strtolower($eventType)) {
