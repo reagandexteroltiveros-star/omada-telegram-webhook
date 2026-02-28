@@ -24,7 +24,7 @@ $description = $data['description'] ?? 'No description provided';
 
 // Map events to friendly labels
 switch(strtolower($eventType)) {
-    case 'device online': $alert = "✅ Device Online"; break;
+    case 'device online': $alert = "✅ Connected"; break;
     case 'device offline':
     case 'heartbeat missed': $alert = "⚠️ Heartbeat Missed"; break;
     case 'adopted': $alert = "📥 Device Adopted"; break;
