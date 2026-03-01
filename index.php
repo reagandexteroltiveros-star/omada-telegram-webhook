@@ -1,101 +1,76 @@
 <?php
-/**
- * Omada Webhook + Telegram Alerts
- * Handles Device Online/Offline, Heartbeat Missed, Adopted, Rebooted, Adopting, Provisioning
- * Logs raw payload to debug and fix "Unknown Event" issue
- */
+// Telegram settings
+$botToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
+$chatId   = "5863793961";
 
-// Telegram bot config
-$telegramBotToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
-$telegramChatId   = "5863793961";
-
-// Default device/site for fallback
-$defaultDevice = 'EAP110-OUTDOOR | TP-LINK OMADA';
-$defaultSite   = 'GELAI VOUCHER WIFI';
-
-// Log received payload for debugging
-$logFile = '/var/www/html/omada_webhook_log.txt'; // Change this to your server's writable directory
+// Read incoming webhook JSON
 $rawData = file_get_contents("php://input");
-file_put_contents($logFile, "Received payload: " . $rawData . "\n", FILE_APPEND);
-
-// Decode the raw payload
 $data = json_decode($rawData, true);
 
-// If no data is received, log and return an error
-if (!$data) {
-    file_put_contents($logFile, "Invalid payload received.\n", FILE_APPEND);
-    http_response_code(400);
-    echo json_encode(['status' => 'failed', 'error' => 'Invalid or empty payload']);
-    exit;
-}
+// Log raw payload for debugging
+$logFile = __DIR__ . '/omada_debug_log.txt'; // Path to log file
+file_put_contents($logFile, date('Y-m-d H:i:s') . " - " . $rawData . "\n", FILE_APPEND);
 
-// Extract values with defaults
-$eventType  = strtolower($data['event_type'] ?? $data['eventType'] ?? 'unknown event');
-$deviceName = $data['device_name'] ?? $data['deviceName'] ?? $defaultDevice;
-$siteName   = $data['site_name'] ?? $data['siteName'] ?? $defaultSite;
-$description = $data['description'] ?? 'No description provided';
+// Default values if keys are missing
+$eventType = $data['eventType'] ?? $data['event_type'] ?? 'Unknown Event';
+$deviceName = $data['deviceName'] ?? $data['device_name'] ?? 'Unknown Device';
+$siteName = $data['siteName'] ?? $data['site_name'] ?? 'Unknown Site';
 
-// Log extracted values for debugging
-file_put_contents($logFile, "Extracted: EventType: $eventType, Device: $deviceName, Site: $siteName\n", FILE_APPEND);
+// Target device/site for highlighting
+$mainDevice = 'EAP110 Outdoor | TP-LINK OMADA';
+$mainSite   = 'GELAI VOUCHER WIFI';
 
-// Map event types to friendly labels
-switch($eventType) {
-    case 'device online': 
-        $alert = "✅ Device Online"; 
+// Map event types to friendly messages
+switch (strtolower($eventType)) {
+    case 'device online':
+        $alert = "✅ Device Online";
         break;
     case 'device offline':
-    case 'heartbeat missed': 
-        $alert = "⚠️ Heartbeat Missed"; 
+        $alert = "❌ Device Offline";
         break;
-    case 'adopted': 
-        $alert = "📥 Device Adopted"; 
+    case 'heartbeat missed':
+        $alert = "⚠️ Heartbeat Missed";
         break;
-    case 'rebooted': 
-        $alert = "🔄 Device Rebooted"; 
+    case 'adopted':
+        $alert = "📥 Device Adopted";
         break;
-    case 'adopting': 
-        $alert = "⏳ Device Adopting"; 
+    case 'rebooted':
+        $alert = "🔄 Device Rebooted";
+        break;
+    case 'adopting':
+        $alert = "⏳ Device Adopting";
         break;
     case 'provisioned':
-    case 'provisioning': 
-        $alert = "⚙️ Device Provisioning"; 
+    case 'provisioning':
+        $alert = "⚙️ Device Provisioning";
         break;
-    case 'client connected':
-        $alert = "📶 Client Connected"; 
-        break;
-    case 'client disconnected':
-        $alert = "📴 Client Disconnected"; 
-        break;
-    default: 
-        $alert = "ℹ️ Unknown Event"; 
+    default:
+        $alert = "ℹ️ $eventType";
         break;
 }
 
-// Highlight main device/site
-if ($deviceName === $defaultDevice && $siteName === $defaultSite) {
-    $alert = "🔥 $alert";
+// Highlight main device and site
+if ($deviceName === $mainDevice && $siteName === $mainSite) {
+    $alert = "🔥 $alert"; // emphasis for main device
 }
 
 // Build Telegram message
-$telegramMessage = "🔥 OMADA ALERT 🔥\n";
-$telegramMessage .= "Event: $alert\n";
-$telegramMessage .= "Device: $deviceName\n";
-$telegramMessage .= "Site: $siteName\n";
-$telegramMessage .= "Time: " . date("Y-m-d H:i:s") . "\n";
-$telegramMessage .= "Note: $description";
+$message  = "📡 OMADA ALERT\n\n";
+$message .= "Event: $alert\n";
+$message .= "Device: $deviceName\n";
+$message .= "Site: $siteName\n";
+$message .= "Time: " . date("Y-m-d H:i:s") . "\n\n";
 
-// Log Telegram message
-file_put_contents($logFile, "Telegram Message: " . $telegramMessage . "\n", FILE_APPEND);
+// For debugging: include full raw JSON if it's an unknown device/event
+if ($deviceName !== $mainDevice || $siteName !== $mainSite) {
+    $message .= "DEBUG PAYLOAD:\n" . $rawData;
+}
 
-// Send to Telegram bot
-$telegramUrl = "https://api.telegram.org/bot{$telegramBotToken}/sendMessage?chat_id={$telegramChatId}&text=" . urlencode($telegramMessage);
-$telegramResponse = file_get_contents($telegramUrl);
+// Send Telegram alert
+file_get_contents(
+    "https://api.telegram.org/bot$botToken/sendMessage?chat_id=$chatId&text=" . urlencode($message)
+);
 
-// Respond to Omada
-http_response_code(200);
-echo json_encode([
-    'status' => 'OK',
-    'payload_received' => $data,
-    'telegram_message_sent' => $telegramMessage,
-    'telegram_api_response' => $telegramResponse
-]);
+// Respond OK to Omada
+echo "OK";
+?>
