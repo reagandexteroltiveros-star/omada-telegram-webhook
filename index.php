@@ -5,11 +5,6 @@
  * Logs raw payload to debug and fix "Unknown Event" issue
  */
 
-
-$rawData = file_get_contents("php://input");
-file_put_contents(__DIR__.'/omada_debug_log.txt', $rawData . "\n", FILE_APPEND);
-http_response_code(200);
-echo "OK";
 // Telegram bot config
 $telegramBotToken = "8414483455:AAGs6rmmLdkx-uFCkpx3-9AEpFXEDXxEeXI";
 $telegramChatId   = "5863793961";
