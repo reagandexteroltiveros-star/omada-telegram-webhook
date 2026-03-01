@@ -7,8 +7,8 @@ $chatId   = "5863793961";
 $rawData = file_get_contents("php://input");
 $data = json_decode($rawData, true);
 
-// Log the full raw payload for debugging
-$logFile = __DIR__ . '/omada_debug_log.txt'; // Path to log file
+// Log the entire payload for debugging
+$logFile = __DIR__ . '/omada_debug_log.txt'; // Log file path
 file_put_contents($logFile, date('Y-m-d H:i:s') . " - " . json_encode($data) . "\n", FILE_APPEND);
 
 // Default values if keys are missing
@@ -18,7 +18,7 @@ $siteName = $data['siteName'] ?? $data['site_name'] ?? 'Unknown Site';
 
 // Target device/site for highlighting
 $mainDevice = 'EAP110';
-$mainSite   = 'GELAI VOUCHER WIFI';
+$mainSite   = 'GELAI WIFI VOUCHER';
 
 // Map event types to friendly messages
 switch (strtolower($eventType)) {
