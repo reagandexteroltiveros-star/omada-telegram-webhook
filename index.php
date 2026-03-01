@@ -7,10 +7,6 @@ $chatId   = "5863793961";
 $rawData = file_get_contents("php://input");
 $data = json_decode($rawData, true);
 
-// Log the entire payload for debugging
-$logFile = __DIR__ . '/omada_debug_log.txt'; // Log file path
-file_put_contents($logFile, date('Y-m-d H:i:s') . " - " . json_encode($data) . "\n", FILE_APPEND);
-
 // Default values if keys are missing
 $eventType = $data['eventType'] ?? $data['event_type'] ?? 'Unknown Event';
 $deviceName = $data['deviceName'] ?? $data['device_name'] ?? 'Unknown Device';
@@ -18,14 +14,14 @@ $siteName = $data['siteName'] ?? $data['site_name'] ?? 'Unknown Site';
 
 // Target device/site for highlighting
 $mainDevice = 'EAP110';
-$mainSite   = 'GELAI WIFI VOUCHER';
+$mainSite   = 'GELAI VOUCHER VOUCHER';
 
 // Map event types to friendly messages
 switch (strtolower($eventType)) {
-    case 'device online':
+    case 'online':
         $alert = "✅ Device Online";
         break;
-    case 'device offline':
+    case 'disconnect':
         $alert = "❌ Device Offline";
         break;
     case 'heartbeat missed':
@@ -49,7 +45,7 @@ switch (strtolower($eventType)) {
         break;
 }
 
-// Highlight main device and site
+// Highlight main device
 if ($deviceName === $mainDevice && $siteName === $mainSite) {
     $alert = "🔥 $alert"; // emphasis for main device
 }
@@ -61,7 +57,7 @@ $message .= "Device: $deviceName\n";
 $message .= "Site: $siteName\n";
 $message .= "Time: " . date("Y-m-d H:i:s") . "\n\n";
 
-// For debugging: include full raw JSON if it's an unknown device/event
+// For debugging: include full raw JSON if it’s an unknown device/event
 if ($deviceName !== $mainDevice || $siteName !== $mainSite) {
     $message .= "DEBUG PAYLOAD:\n" . $rawData;
 }
@@ -73,4 +69,3 @@ file_get_contents(
 
 // Respond OK to Omada
 echo "OK";
-?>
